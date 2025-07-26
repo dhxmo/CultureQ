@@ -13,8 +13,12 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as admins from "../admins.js";
+import type * as cashbacks from "../cashbacks.js";
+import type * as coupons from "../coupons.js";
 import type * as preferences from "../preferences.js";
 import type * as qloo from "../qloo.js";
+import type * as qlooEntities from "../qlooEntities.js";
 import type * as transactions from "../transactions.js";
 import type * as users from "../users.js";
 
@@ -27,8 +31,12 @@ import type * as users from "../users.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  admins: typeof admins;
+  cashbacks: typeof cashbacks;
+  coupons: typeof coupons;
   preferences: typeof preferences;
   qloo: typeof qloo;
+  qlooEntities: typeof qlooEntities;
   transactions: typeof transactions;
   users: typeof users;
 }>;

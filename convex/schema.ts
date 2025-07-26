@@ -29,7 +29,8 @@ export default defineSchema({
           entity_id: v.string(),
           popularity: v.number(),
           affinity: v.number(),
-          audience_growth: v.number()
+          audience_growth: v.number(),
+          short_description: v.optional(v.string())
         }))
       }))),
       lastUpdated: v.number(),
@@ -121,4 +122,91 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_tab_type", ["tabType"]),
+
+  // Admin users table
+  admins: defineTable({
+    username: v.string(),
+    passwordHash: v.string(), // bcrypt hashed password
+    email: v.string(),
+    isActive: v.boolean(),
+    lastLogin: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_username", ["username"])
+    .index("by_active", ["isActive"]),
+
+  // Admin coupons table
+  coupons: defineTable({
+    code: v.string(),
+    title: v.string(),
+    description: v.string(),
+    merchantName: v.string(),
+    discountType: v.union(v.literal("percentage"), v.literal("fixed_amount")),
+    discountValue: v.number(),
+    minSpendAmount: v.optional(v.number()),
+    maxDiscountAmount: v.optional(v.number()),
+    validFrom: v.number(),
+    validUntil: v.number(),
+    usageLimit: v.optional(v.number()),
+    usageCount: v.number(),
+    isActive: v.boolean(),
+    createdBy: v.id("admins"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_code", ["code"])
+    .index("by_merchant", ["merchantName"])
+    .index("by_active", ["isActive"])
+    .index("by_created_by", ["createdBy"]),
+
+  // Admin cashbacks table
+  cashbacks: defineTable({
+    title: v.string(),
+    description: v.string(),
+    merchantName: v.string(),
+    cashbackRate: v.number(), // percentage
+    minSpendAmount: v.optional(v.number()),
+    maxCashbackAmount: v.optional(v.number()),
+    validFrom: v.number(),
+    validUntil: v.number(),
+    usageLimit: v.optional(v.number()),
+    usageCount: v.number(),
+    isActive: v.boolean(),
+    createdBy: v.id("admins"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_merchant", ["merchantName"])
+    .index("by_active", ["isActive"])
+    .index("by_created_by", ["createdBy"]),
+
+  // Coupon usage tracking
+  couponUsage: defineTable({
+    couponId: v.id("coupons"),
+    userId: v.id("users"),
+    usedAt: v.number(),
+    discountAmount: v.number(),
+    orderAmount: v.number(),
+  })
+    .index("by_coupon", ["couponId"])
+    .index("by_user", ["userId"]),
+
+  // Cashback usage tracking
+  cashbackUsage: defineTable({
+    cashbackId: v.id("cashbacks"),
+    userId: v.id("users"),
+    usedAt: v.number(),
+    cashbackAmount: v.number(),
+    orderAmount: v.number(),
+  })
+    .index("by_cashback", ["cashbackId"])
+    .index("by_user", ["userId"]),
+
+  // Qloo entities for brand recommendations
+  qlooEntities: defineTable({
+    entityId: v.string(),
+    name: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_entity_id", ["entityId"]),
 });

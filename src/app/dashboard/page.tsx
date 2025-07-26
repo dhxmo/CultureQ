@@ -15,6 +15,7 @@ export default function DashboardPage() {
     isLoadingTransactions,
     error,
     fetchTransactions,
+    fetchAttachedBrands,
     userId,
   } = useAuth();
   const router = useRouter();
@@ -193,6 +194,33 @@ export default function DashboardPage() {
     router,
   ]);
 
+  // Extract all brand names from attached brands for coupon/cashback matching
+  const allBrandNames = transactions?.attachedBrands
+    ? transactions.attachedBrands
+        .filter(
+          (merchantData) =>
+            !excludedMerchants.includes(merchantData.merchantName),
+        )
+        .flatMap((merchantData) =>
+          merchantData.brands.map((brand) => brand.name),
+        )
+    : [];
+
+  // Debug logging
+  // Query for matching coupons and cashbacks
+  const matchingCoupons = useQuery(
+    api.coupons.findCouponsForBrands,
+    allBrandNames.length > 0 ? { brandNames: allBrandNames } : "skip",
+  );
+
+  const matchingCashbacks = useQuery(
+    api.cashbacks.findCashbacksForBrands,
+    allBrandNames.length > 0 ? { brandNames: allBrandNames } : "skip",
+  );
+
+  // Mutation to test saving QlooEntities directly
+  const saveQlooEntities = useMutation(api.qlooEntities.saveQlooEntities);
+
   // Update attached brands when transactions change, filtering out excluded merchants
   useEffect(() => {
     if (isAuthenticated && transactions?.attachedBrands) {
@@ -210,12 +238,37 @@ export default function DashboardPage() {
         initialPagination[merchantData.merchantName] = 1;
       });
       setBrandPages(initialPagination);
-
-      console.log(
-        `Showing ${filteredAttachedBrands.length} of ${transactions.attachedBrands.length} merchants (${excludedMerchants.length} excluded)`,
-      );
     }
   }, [isAuthenticated, transactions, excludedMerchants]);
+
+  // Auto-save QlooEntities when new attached brands data arrives
+  useEffect(() => {
+    if (isAuthenticated && transactions?.attachedBrands && saveQlooEntities) {
+      // Extract all QlooEntities from attached brands data
+      const qlooEntities = transactions.attachedBrands.flatMap(
+        (attachedBrand) =>
+          attachedBrand.brands.map((brand) => ({
+            entityId: brand.entity_id,
+            name: brand.name,
+          })),
+      );
+
+      if (qlooEntities.length > 0) {
+        saveQlooEntities({ entities: qlooEntities })
+          .then((result) => {
+            console.log(
+              `🔄 Auto-save: Successfully saved ${qlooEntities.length} QlooEntities:`,
+              result,
+            );
+          })
+          .catch((error) => {
+            console.error("🔄 Auto-save: Error saving QlooEntities:", error);
+          });
+      } else {
+        console.log("🔄 Auto-save: No QlooEntities to save");
+      }
+    }
+  }, [isAuthenticated, transactions?.attachedBrands, saveQlooEntities]);
 
   if (isLoading) {
     return (
@@ -333,6 +386,123 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Available Offers Section */}
+      {(matchingCoupons && matchingCoupons.length > 0) ||
+      (matchingCashbacks && matchingCashbacks.length > 0) ? (
+        <div className="bg-white p-6 rounded-lg border mb-6">
+          <h2 className="text-2xl font-semibold mb-4">
+            🎉 Available Offers for You!
+          </h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Based on your preferences and transaction history, here are the
+            deals available for your favorite brands:
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Coupons Section */}
+            {matchingCoupons && matchingCoupons.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-green-600">
+                  💰 Coupons
+                </h3>
+                <div className="space-y-3">
+                  {matchingCoupons.map((coupon) => (
+                    <div
+                      key={coupon._id}
+                      className="border border-green-200 rounded-lg p-4 bg-green-50"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-green-800">
+                          {coupon.title}
+                        </h4>
+                        <span className="bg-green-600 text-white px-2 py-1 rounded text-sm font-bold">
+                          {coupon.code}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-2">
+                        {coupon.description}
+                      </p>
+                      <div className="flex justify-between items-center text-xs text-gray-600">
+                        <span className="font-medium">
+                          {coupon.merchantName} •{" "}
+                          {coupon.discountType === "percentage"
+                            ? `${coupon.discountValue}% off`
+                            : `$${coupon.discountValue} off`}
+                        </span>
+                        <span>
+                          Valid until{" "}
+                          {new Date(coupon.validUntil).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {coupon.minSpendAmount && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Min spend: ${coupon.minSpendAmount}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Cashbacks Section */}
+            {matchingCashbacks && matchingCashbacks.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-blue-600">
+                  💸 Cashbacks
+                </h3>
+                <div className="space-y-3">
+                  {matchingCashbacks.map((cashback) => (
+                    <div
+                      key={cashback._id}
+                      className="border border-blue-200 rounded-lg p-4 bg-blue-50"
+                    >
+                      <h4 className="font-semibold text-blue-800 mb-2">
+                        {cashback.title}
+                      </h4>
+                      <p className="text-sm text-gray-700 mb-2">
+                        {cashback.description}
+                      </p>
+                      <div className="flex justify-between items-center text-xs text-gray-600">
+                        <span className="font-medium">
+                          {cashback.merchantName} • {cashback.cashbackRate}%
+                          cashback
+                        </span>
+                        <span>
+                          Valid until{" "}
+                          {new Date(cashback.validUntil).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {cashback.minSpendAmount && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Min spend: ${cashback.minSpendAmount}
+                        </div>
+                      )}
+                      {cashback.maxCashbackAmount && (
+                        <div className="text-xs text-gray-500">
+                          Max cashback: ${cashback.maxCashbackAmount}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : allBrandNames.length > 0 ? (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <h3 className="font-semibold text-yellow-800 mb-2">
+            No Offers Available Yet
+          </h3>
+          <p className="text-sm text-yellow-700">
+            We found {allBrandNames.length} brands you&apos;re interested in,
+            but no offers are currently available for them. Check back later for
+            new deals!
+          </p>
+        </div>
+      ) : null}
 
       <div className="bg-white p-6 rounded-lg border mb-6">
         <div className="flex justify-between items-center mb-4">

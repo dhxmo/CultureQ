@@ -71,8 +71,7 @@ export const getAttachedBrandsForMerchants = async (
 ): Promise<AttachedBrand[]> => {
   // Deduplicate merchant names to avoid duplicate API calls
   const uniqueMerchantNames = [...new Set(merchantNames)];
-  console.log(`Processing ${uniqueMerchantNames.length} unique merchants (${merchantNames.length} total)`);
-  
+
   // Process merchants in parallel for better performance
   const promises = uniqueMerchantNames.map(async (merchantName) => {
     const entityId = await searchEntityByName(merchantName);
@@ -109,14 +108,16 @@ export const isCacheInvalidatedByPreferences = (
   cacheExcluded: string[],
   currentAge: number,
   currentLocation: string,
-  currentExcluded: string[]
+  currentExcluded: string[],
 ): boolean => {
   if (cacheAge !== currentAge) return true;
   if (cacheLocation !== currentLocation) return true;
-  
+
   // Check if excluded merchants have changed
   if (cacheExcluded.length !== currentExcluded.length) return true;
   const sortedCache = [...cacheExcluded].sort();
   const sortedCurrent = [...currentExcluded].sort();
-  return sortedCache.some((merchant, index) => merchant !== sortedCurrent[index]);
+  return sortedCache.some(
+    (merchant, index) => merchant !== sortedCurrent[index],
+  );
 };

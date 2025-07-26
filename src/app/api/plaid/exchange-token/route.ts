@@ -19,11 +19,8 @@ const client = new PlaidApi(
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(request: NextRequest) {
-  console.log('Exchange Token API: Request received');
   try {
     const { public_token } = await request.json();
-    console.log('Exchange Token API: Public token received');
-
     // Exchange public token for access token
     const tokenResponse = await client.itemPublicTokenExchange({
       public_token,
@@ -31,13 +28,6 @@ export async function POST(request: NextRequest) {
 
     const accessToken = tokenResponse.data.access_token;
     const itemId = tokenResponse.data.item_id;
-    
-    console.log('Exchange Token API: Token exchange successful', { itemId });
-
-    // Get account info and identity data
-    // const accountsResponse = await client.accountsGet({
-    //   access_token: accessToken,
-    // });
 
     let email: string | undefined;
     try {
@@ -47,7 +37,7 @@ export async function POST(request: NextRequest) {
       email = identityResponse.data.accounts[0]?.owners[0]?.emails[0]?.data;
     } catch {
       // Identity endpoint might not be available in sandbox
-      console.log("Identity data not available");
+      console.error("Identity data not available");
     }
 
     // Encrypt the access token and email
@@ -55,14 +45,11 @@ export async function POST(request: NextRequest) {
     const encryptedEmail = email ? encrypt(email) : undefined;
 
     // Create user in Convex with encrypted Plaid data
-    console.log('Exchange Token API: Creating user in Convex', { plaidUserId: itemId });
     const userId = await convex.mutation(api.users.createUser, {
       plaidUserId: itemId,
       email: encryptedEmail,
       accessToken: encryptedAccessToken,
     });
-    
-    console.log('Exchange Token API: User created successfully', { userId, itemId });
 
     return NextResponse.json({
       success: true,

@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
     const json = await response.json();
 
     if (json.results?.entities) {
+      
       const brands: QlooEntity[] = json.results.entities.map(
         (entity: {
           name: string;
@@ -69,6 +70,9 @@ export async function POST(request: NextRequest) {
           audience_growth: entity.query.measurements.audience_growth,
         }),
       );
+
+      return NextResponse.json({ brands });
+    }
 
       return NextResponse.json({ brands });
     }

@@ -12,7 +12,11 @@ import {
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { getAttachedBrandsForMerchants, isQlooCacheExpired, isCacheInvalidatedByPreferences } from "../lib/qloo";
+import {
+  getAttachedBrandsForMerchants,
+  isQlooCacheExpired,
+  isCacheInvalidatedByPreferences,
+} from "../lib/qloo";
 
 interface TransactionRequest {
   userId: string;
@@ -131,6 +135,7 @@ interface AuthContextType extends AuthState {
   fetchTransactions: (
     options?: Partial<Omit<TransactionRequest, "userId">>,
   ) => Promise<void>;
+  fetchAttachedBrands: (merchantNames: string[]) => Promise<any>;
   clearTransactions: () => void;
   setPage: (page: number) => void;
   setItemsPerPage: (itemsPerPage: number) => void;
@@ -330,35 +335,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           const missingFields = [];
           if (!userAge) missingFields.push("age");
           if (!userLocation) missingFields.push("location");
-          
+
           window.alert(
             `Please complete your profile first!\n\n` +
-            `Missing: ${missingFields.join(", ")}\n\n` +
-            `Go to Profile → Set your ${missingFields.join(" and ")} to get personalized recommendations.`
+              `Missing: ${missingFields.join(", ")}\n\n` +
+              `Go to Profile → Set your ${missingFields.join(" and ")} to get personalized recommendations.`,
           );
-          
-          console.log(`Skipping Qloo fetch - missing required fields: ${missingFields.join(", ")}`);
+
           return null;
         }
 
         // Check if cache exists and is not expired, and preferences haven't changed
-        const cacheExpired = isQlooCacheExpired(qlooCache?.lastQlooFetch);
-        const preferencesChanged = qlooCache?.hasCachedData ? 
-          isCacheInvalidatedByPreferences(
-            qlooCache.userAge || 0, // Use 0 as invalid age for comparison
-            qlooCache.userLocation || "",
-            qlooCache.excludedMerchants,
-            userAge,
-            userLocation,
-            excludedMerchants
-          ) : false;
+        const cacheExpired = isQlooCacheExpired(
+          qlooCache?.lastQlooFetch ?? null,
+        );
+        const preferencesChanged = qlooCache?.hasCachedData
+          ? isCacheInvalidatedByPreferences(
+              qlooCache.userAge || 0, // Use 0 as invalid age for comparison
+              qlooCache.userLocation || "",
+              qlooCache.excludedMerchants,
+              userAge,
+              userLocation,
+              excludedMerchants,
+            )
+          : false;
 
-        if (
-          qlooCache?.hasCachedData &&
-          !cacheExpired &&
-          !preferencesChanged
-        ) {
-          console.log("Using cached Qloo data");
+        if (qlooCache?.hasCachedData && !cacheExpired && !preferencesChanged) {
           return qlooCache.attachedBrands || null;
         }
 
@@ -366,21 +368,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           console.log("Cache invalidated due to user preference changes");
         }
 
-        console.log("Fetching fresh Qloo data - cache expired or missing");
-
         // Filter out excluded merchants
         const filteredMerchantNames = merchantNames.filter(
           (merchantName) => !excludedMerchants.includes(merchantName),
-        );
-
-        console.log(
-          `Using user preferences: Age ${userAge}, Location ${userLocation}`,
-        );
-        console.log(
-          `Excluded merchants: ${excludedMerchants.length} (${excludedMerchants.join(", ")})`,
-        );
-        console.log(
-          `Fetching for ${filteredMerchantNames.length} merchants after filtering`,
         );
 
         // Fetch fresh data from Qloo API with user's preferences and filtered merchants
@@ -396,7 +386,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             userId: userId as Id<"users">,
             attachedBrands: attachedBrandsData,
           });
-          console.log("Saved fresh Qloo data to cache");
+        } else {
+          console.log("⚠️ No attachedBrandsData to process");
         }
 
         return attachedBrandsData;
@@ -406,6 +397,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
     },
     [qlooCache, updateQlooCache, currentUser],
+  );
+
+  // Standalone function to fetch attached brands for specific merchants
+  const fetchAttachedBrands = useCallback(
+    async (merchantNames: string[]) => {
+      if (!state.isAuthenticated || !state.userId) {
+        console.error("User not authenticated");
+        return null;
+      }
+
+      if (!currentUser?.age || !currentUser?.location) {
+        console.error("User profile incomplete - age and location required");
+        return null;
+      }
+
+      try {
+        const result = await fetchQlooAttachedBrands(
+          state.userId,
+          merchantNames,
+        );
+        return result;
+      } catch (error) {
+        console.error("❌ Error fetching attached brands:", error);
+        return null;
+      }
+    },
+    [state.isAuthenticated, state.userId, currentUser, fetchQlooAttachedBrands],
   );
 
   const fetchTransactions = useCallback(
@@ -461,7 +479,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         // Limit to first 10 merchants to avoid API rate limiting during testing
         const merchantNames =
           transactionData.merchants?.map((m: { name: string }) => m.name) || [];
-        // transactionData.merchants?.map((m: { name: string }) => m.name).slice(0, 2) || [];
+
         const attachedBrandsData = await fetchQlooAttachedBrands(
           state.userId,
           merchantNames,
@@ -525,6 +543,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     logout,
     clearError,
     fetchTransactions,
+    fetchAttachedBrands,
     clearTransactions,
     setPage,
     setItemsPerPage,
