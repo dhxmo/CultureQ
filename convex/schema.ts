@@ -6,40 +6,47 @@ export default defineSchema({
   users: defineTable({
     plaidUserId: v.string(), // Unique identifier from Plaid
     email: v.optional(v.string()), // From Plaid identity data, encrypted
-    
+
     // User profile data for Qloo API
     age: v.optional(v.number()),
     location: v.optional(v.string()), // City name
     excludedMerchants: v.optional(v.array(v.string())), // Merchants to exclude from recommendations
-    
+
     // Plaid integration
     plaidAccessToken: v.optional(v.string()), // Encrypted
     lastTransactionSync: v.optional(v.number()),
-    
+
     // Taste profile from conversations + transactions
-    tasteProfile: v.optional(v.object({
-      interests: v.array(v.string()),
-      preferences: v.array(v.string()),
-      aspirations: v.array(v.string()),
-      lifestyle: v.array(v.string()),
-      attachedBrands: v.optional(v.array(v.object({
-        merchantName: v.string(),
-        brands: v.array(v.object({
-          name: v.string(),
-          entity_id: v.string(),
-          popularity: v.number(),
-          affinity: v.number(),
-          audience_growth: v.number(),
-          short_description: v.optional(v.string())
-        }))
-      }))),
-      lastUpdated: v.number(),
-    })),
-    
+    tasteProfile: v.optional(
+      v.object({
+        interests: v.array(v.string()),
+        preferences: v.array(v.string()),
+        aspirations: v.array(v.string()),
+        lifestyle: v.array(v.string()),
+        attachedBrands: v.optional(
+          v.array(
+            v.object({
+              merchantName: v.string(),
+              brands: v.array(
+                v.object({
+                  name: v.string(),
+                  entity_id: v.string(),
+                  popularity: v.number(),
+                  affinity: v.number(),
+                  audience_growth: v.number(),
+                  short_description: v.optional(v.string()),
+                }),
+              ),
+            }),
+          ),
+        ),
+        lastUpdated: v.number(),
+      }),
+    ),
+
     createdAt: v.number(),
     updatedAt: v.number(),
-  })
-    .index("by_plaid_user_id", ["plaidUserId"]),
+  }).index("by_plaid_user_id", ["plaidUserId"]),
 
   // User preferences for blocking merchants/categories
   preferences: defineTable({
@@ -49,8 +56,7 @@ export default defineSchema({
     maxOffersPerMonth: v.number(), // Fixed at 3 per month
     createdAt: v.number(),
     updatedAt: v.number(),
-  })
-    .index("by_user", ["userId"]),
+  }).index("by_user", ["userId"]),
 
   // Anonymized transaction data
   transactions: defineTable({
@@ -85,7 +91,11 @@ export default defineSchema({
     title: v.string(),
     description: v.string(),
     cashbackRate: v.number(),
-    status: v.union(v.literal("delivered"), v.literal("viewed"), v.literal("redeemed")),
+    status: v.union(
+      v.literal("delivered"),
+      v.literal("viewed"),
+      v.literal("redeemed"),
+    ),
     deliveredAt: v.number(),
     redeemedAt: v.optional(v.number()),
   })
@@ -98,30 +108,70 @@ export default defineSchema({
     merchantName: v.string(),
     description: v.string(),
     requestMonth: v.string(), // YYYY-MM format
-    status: v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+    ),
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_user_month", ["userId", "requestMonth"]),
 
-  // Conversation history for taste building
+  // Conversation history for taste building and chat interactions
   conversations: defineTable({
     userId: v.id("users"),
-    tabType: v.union(
+    chatType: v.union(
+      v.literal("aspirations_bridge"), 
+      v.literal("coupon_request"),
       v.literal("profile_building"),
-      v.literal("activity_planning"), 
-      v.literal("goal_setting")
+      v.literal("activity_planning"),
+      v.literal("goal_setting"),
     ),
-    messages: v.array(v.object({
-      role: v.union(v.literal("user"), v.literal("assistant")),
-      content: v.string(),
-      timestamp: v.number(),
-    })),
+    title: v.optional(v.string()),
+    messages: v.array(
+      v.object({
+        role: v.union(v.literal("user"), v.literal("assistant")),
+        content: v.string(),
+        timestamp: v.number(),
+      }),
+    ),
     extractedInsights: v.optional(v.array(v.string())),
+    merchantPreferences: v.optional(v.array(v.string())),
+    categoryPreferences: v.optional(v.array(v.string())),
+    discoveredBrands: v.optional(v.array(v.string())),
+    aspirationGoals: v.optional(v.array(v.string())),
+    couponRequests: v.optional(v.array(v.object({
+      merchantName: v.string(),
+      reason: v.string(),
+      priority: v.union(v.literal("high"), v.literal("medium"), v.literal("low")),
+    }))),
+    summary: v.optional(v.string()),
+    matchedBrands: v.optional(v.array(v.object({
+      name: v.string(),
+      entity_id: v.string(),
+      merchantName: v.string(),
+      short_description: v.string(),
+      matchScore: v.number(),
+      matchReason: v.string(),
+      matchedAt: v.number(),
+      attachedBrands: v.optional(v.array(v.object({
+        name: v.string(),
+        entity_id: v.string(),
+        popularity: v.number(),
+        affinity: v.number(),
+        audience_growth: v.number(),
+        short_description: v.string(),
+      }))),
+      attachedBrandsFetchedAt: v.optional(v.number()),
+    }))),
+    isCompleted: v.boolean(),
     createdAt: v.number(),
+    updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_tab_type", ["tabType"]),
+    .index("by_chat_type", ["chatType"])
+    .index("by_user_chat_type", ["userId", "chatType"]),
 
   // Admin users table
   admins: defineTable({
@@ -207,6 +257,28 @@ export default defineSchema({
     entityId: v.string(),
     name: v.string(),
     createdAt: v.number(),
-  })
-    .index("by_entity_id", ["entityId"]),
+  }).index("by_entity_id", ["entityId"]),
+
+  // Qloo brands with descriptions
+  brands: defineTable({
+    name: v.string(),
+    entity_id: v.string(),
+    short_description: v.string(),
+    createdAt: v.number(),
+  }).index("by_entity_id", ["entity_id"]),
+
+  // Merchant-brand cache to avoid repeated Qloo API calls
+  merchantBrands: defineTable({
+    merchantEntityId: v.string(),
+    merchantName: v.string(),
+    brands: v.array(v.object({
+      name: v.string(),
+      entity_id: v.string(),
+      popularity: v.number(),
+      affinity: v.number(),
+      audience_growth: v.number(),
+      short_description: v.string(),
+    })),
+    createdAt: v.number(),
+  }).index("by_merchant_entity_id", ["merchantEntityId"]),
 });

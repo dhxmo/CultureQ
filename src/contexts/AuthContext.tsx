@@ -135,7 +135,7 @@ interface AuthContextType extends AuthState {
   fetchTransactions: (
     options?: Partial<Omit<TransactionRequest, "userId">>,
   ) => Promise<void>;
-  fetchAttachedBrands: (merchantNames: string[]) => Promise<any>;
+  fetchAttachedBrands: (merchantNames: string[]) => Promise<unknown>;
   clearTransactions: () => void;
   setPage: (page: number) => void;
   setItemsPerPage: (itemsPerPage: number) => void;

@@ -14,7 +14,9 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as admins from "../admins.js";
+import type * as brands from "../brands.js";
 import type * as cashbacks from "../cashbacks.js";
+import type * as conversations from "../conversations.js";
 import type * as coupons from "../coupons.js";
 import type * as preferences from "../preferences.js";
 import type * as qloo from "../qloo.js";
@@ -32,7 +34,9 @@ import type * as users from "../users.js";
  */
 declare const fullApi: ApiFromModules<{
   admins: typeof admins;
+  brands: typeof brands;
   cashbacks: typeof cashbacks;
+  conversations: typeof conversations;
   coupons: typeof coupons;
   preferences: typeof preferences;
   qloo: typeof qloo;

@@ -15,7 +15,9 @@ export default function AdminDashboard() {
   const { isAuthenticated, isLoading, username, logout } = useAdmin();
   const router = useRouter();
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const coupons = useQuery(api.coupons.listCoupons);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const cashbacks = useQuery(api.cashbacks.listCashbacks);
 
   // Redirect if not authenticated

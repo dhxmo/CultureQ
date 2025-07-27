@@ -29,7 +29,8 @@ export const updateQlooCache = mutation({
         entity_id: v.string(),
         popularity: v.number(),
         affinity: v.number(),
-        audience_growth: v.number()
+        audience_growth: v.number(),
+        short_description: v.optional(v.string())
       }))
     }))
   },
