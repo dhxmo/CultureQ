@@ -730,7 +730,14 @@ export default function DashboardPage() {
                             >
                               <div className="flex justify-between items-start mb-2">
                                 <h4 className="font-semibold text-purple-800">
-                                  {matchedBrand.name}
+                                  <a 
+                                    href={`https://www.retailmenot.com/view/${matchedBrand.name.toLowerCase().replace(/\s+/g, '')}.com`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:underline hover:text-purple-600"
+                                  >
+                                    {matchedBrand.name}
+                                  </a>
                                 </h4>
                                 <span className="bg-purple-600 text-white px-2 py-1 rounded text-xs">
                                   Score: {matchedBrand.matchScore}
@@ -794,7 +801,14 @@ export default function DashboardPage() {
                             <div className="flex justify-between items-start mb-4">
                               <div>
                                 <h4 className="font-semibold text-purple-800 text-lg">
-                                  {matchedBrand.name}
+                                  <a 
+                                    href={`https://www.retailmenot.com/view/${matchedBrand.name.toLowerCase().replace(/\s+/g, '')}.com`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:underline hover:text-purple-600"
+                                  >
+                                    {matchedBrand.name}
+                                  </a>
                                 </h4>
                                 <p className="text-sm text-gray-700 mt-1">
                                   {matchedBrand.short_description}
@@ -868,7 +882,14 @@ export default function DashboardPage() {
                   return (
                     <div key={merchantIndex} className="border rounded-lg p-4">
                       <h3 className="font-semibold text-lg mb-3 text-blue-600">
-                        {merchantData.merchantName}
+                        <a 
+                          href={`https://www.retailmenot.com/view/${merchantData.merchantName.toLowerCase().replace(/\s+/g, '')}.com`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline hover:text-blue-800"
+                        >
+                          {merchantData.merchantName}
+                        </a>
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {paginatedBrandsForMerchant.map((brand, brandIndex) => (
@@ -877,7 +898,14 @@ export default function DashboardPage() {
                             className="bg-gray-50 p-3 rounded-md"
                           >
                             <h4 className="font-medium text-sm">
-                              {brand.name}
+                              <a 
+                                href={`https://www.retailmenot.com/view/${brand.name.toLowerCase().replace(/\s+/g, '')}.com`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline hover:text-gray-800"
+                              >
+                                {brand.name}
+                              </a>
                             </h4>
                             <div className="flex justify-between text-xs text-gray-600 mt-1">
                               <span>
