@@ -5,7 +5,7 @@ const secretKey = process.env.ENCRYPTION_KEY!; // Must be 32 bytes
 
 export function encrypt(text: string): string {
   const iv = crypto.randomBytes(16);
-  const key = Buffer.from(secretKey, "utf8");
+  const key = Buffer.from(secretKey, "hex");
   const cipher = crypto.createCipheriv(algorithm, key, iv);
 
   let encrypted = cipher.update(text, "utf8", "hex");
@@ -26,7 +26,7 @@ export function decrypt(encryptedData: string): string {
   const [ivHex, authTagHex, encrypted] = parts;
   const iv = Buffer.from(ivHex, "hex");
   const authTag = Buffer.from(authTagHex, "hex");
-  const key = Buffer.from(secretKey, "utf8");
+  const key = Buffer.from(secretKey, "hex");
 
   const decipher = crypto.createDecipheriv(algorithm, key, iv);
   decipher.setAuthTag(authTag);
