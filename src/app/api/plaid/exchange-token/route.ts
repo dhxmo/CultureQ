@@ -6,14 +6,14 @@ import { encrypt } from "../../../../lib/encryption";
 
 const client = new PlaidApi(
   new Configuration({
-    basePath: PlaidEnvironments[process.env.PLAID_ENV || ""],
+    basePath: PlaidEnvironments[process.env.PLAID_ENV || "sandbox"],
     baseOptions: {
       headers: {
         "PLAID-CLIENT-ID": process.env.PLAID_CLIENT_ID,
         "PLAID-SECRET": process.env.PLAID_SECRET,
       },
     },
-  }),
+  })
 );
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     console.error("Error exchanging token:", error);
     return NextResponse.json(
       { error: "Failed to exchange token" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

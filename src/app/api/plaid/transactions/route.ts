@@ -46,8 +46,10 @@ interface TransactionResponse {
 }
 
 // Utility function for sorting transactions by date (most recent first)
-const compareTxnsByDateDescending = (a: { date: string }, b: { date: string }) =>
-  (b.date > a.date ? 1 : 0) - (b.date < a.date ? 1 : 0);
+const compareTxnsByDateDescending = (
+  a: { date: string },
+  b: { date: string }
+) => (b.date > a.date ? 1 : 0) - (b.date < a.date ? 1 : 0);
 
 // Helper function to add delay for polling
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
     if (!body.userId) {
       return NextResponse.json(
         { error: "User ID is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -69,7 +71,7 @@ export async function POST(request: NextRequest) {
     if (count <= 0 || count > 500) {
       return NextResponse.json(
         { error: "Count must be between 1 and 500" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -92,7 +94,7 @@ export async function POST(request: NextRequest) {
       console.error("❌ Convex query error:", convexError);
       return NextResponse.json(
         { error: "Database connection error" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -103,7 +105,7 @@ export async function POST(request: NextRequest) {
     if (!user.plaidAccessToken) {
       return NextResponse.json(
         { error: "User access token not found" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -115,7 +117,7 @@ export async function POST(request: NextRequest) {
       console.error("❌ Failed to decrypt access token:", error);
       return NextResponse.json(
         { error: "Failed to authenticate user" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -166,7 +168,9 @@ export async function POST(request: NextRequest) {
 
     // Sort transactions by date (most recent first) and get the requested count
     const allTransactions = [...added, ...modified];
-    const sortedTransactions = allTransactions.sort(compareTxnsByDateDescending);
+    const sortedTransactions = allTransactions.sort(
+      compareTxnsByDateDescending
+    );
     const recentTransactions = sortedTransactions.slice(0, count);
     // Process and normalize transaction data
     const processedTransactions: ProcessedTransaction[] =
@@ -186,7 +190,7 @@ export async function POST(request: NextRequest) {
 
     // Extract unique categories
     const uniqueCategories = Array.from(
-      new Set(processedTransactions.map((t) => t.category)),
+      new Set(processedTransactions.map((t) => t.category))
     ).sort();
 
     // Prepare response
@@ -217,7 +221,7 @@ export async function POST(request: NextRequest) {
               plaidError.response.data.display_message ||
               "Failed to fetch transactions from bank",
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
@@ -225,7 +229,7 @@ export async function POST(request: NextRequest) {
     console.error("🔥 Unhandled error - returning 500");
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
